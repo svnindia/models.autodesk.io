@@ -1,20 +1,20 @@
 //
-// Copyright (c) Autodesk, Inc. All rights reserved 
+// Copyright (c) Autodesk, Inc. All rights reserved
 //
-// Node.js server workflow 
+// Node.js server workflow
 // by Cyrille Fauvel - Autodesk Developer Network (ADN)
 // January 2015
 //
 // Permission to use, copy, modify, and distribute this software in
-// object code form for any purpose and without fee is hereby granted, 
-// provided that the above copyright notice appears in all copies and 
+// object code form for any purpose and without fee is hereby granted,
+// provided that the above copyright notice appears in all copies and
 // that both that copyright notice and the limited warranty and
-// restricted rights notice below appear in all supporting 
+// restricted rights notice below appear in all supporting
 // documentation.
 //
-// AUTODESK PROVIDES THIS PROGRAM "AS IS" AND WITH ALL FAULTS. 
+// AUTODESK PROVIDES THIS PROGRAM "AS IS" AND WITH ALL FAULTS.
 // AUTODESK SPECIFICALLY DISCLAIMS ANY IMPLIED WARRANTY OF
-// MERCHANTABILITY OR FITNESS FOR A PARTICULAR USE.  AUTODESK, INC. 
+// MERCHANTABILITY OR FITNESS FOR A PARTICULAR USE.  AUTODESK, INC.
 // DOES NOT WARRANT THAT THE OPERATION OF THE PROGRAM WILL BE
 // UNINTERRUPTED OR ERROR FREE.
 //
@@ -27,16 +27,17 @@ var router =express.Router () ;
 // This is the downgraded access_token for the viewer (should be read-only)
 router.get ('/token', function (req, res) {
     var credentials =config.clone ('data:read') ;
-    credentials.client_id =req.query.key ;
-    credentials.client_secret =req.query.secret ;
+    // credentials.client_id =req.query.key ;
+    // credentials.client_secret =req.query.secret ;
+    console.log("credentials ",credentials)
     refreshToken (credentials, res) ;
 }) ;
 
 // This is the full access access_token for the application to process/translate files
 router.post ('/token', function (req, res) {
 	var credentials =config.clone () ;
-	credentials.client_id =req.body.key ;
-	credentials.client_secret =req.body.secret ;
+	// credentials.client_id =req.body.key ;
+	// credentials.client_secret =req.body.secret ;
 	refreshToken (credentials, res) ;
 }) ;
 
