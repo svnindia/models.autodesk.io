@@ -26,9 +26,11 @@ var promisify =require ('es6-promisify') ;
 var stat =promisify (fs.stat) ;
 var readFile =promisify (fs.readFile) ;
 var crypto =require ('crypto') ;
-var config =require ('./credentials') ;
+
 var ForgeSDK = require('forge-apis');
-var session = require('express-session');
+var CLIENT_ID = 'YRIAamAj6ZW7tIBV6ikLyxIbtVuTtt2Y';
+var CLIENT_SECRET = '6YZEfFmp7AQyEjAd';
+var REDIRECT_URL = 'http://172.28.128.3/lmv/callback';
 
 // var ForgeOSS = ForgeSDK;
 // var ForgeModelDerivative = ForgeSDK;
@@ -45,31 +47,27 @@ var router =express.Router () ;
 router.use (bodyParser.json ()) ;
 
 router.get ('/translate/:urn/progress', function (req, res) {
+  var accessToken =req.query.accessToken ;
   var urn =req.params.urn ;
-  var credentials = req.session.credentials
-  var autoRefresh = true;
-  var oAuth2TwoLegged = new ForgeSDK.AuthClientTwoLegged(credentials.client_id, credentials.client_secret, credentials.scope, autoRefresh);
-  oAuth2TwoLegged.authenticate().then(function(credentials) {
-    md.getManifest (urn, {},oAuth2TwoLegged,credentials)
-    .then (function (dataBody) {
-        var data = dataBody.body
-        console.log("progrees data ",data)
-        var name =path.basename (new Buffer(data.urn, 'base64').toString ()) ;
-        if ( data.derivatives !== undefined && data.derivatives.length > 0 && data.derivatives [0].hasOwnProperty ('name') )
-          name =data.derivatives [0].name ;
-        // var percentage = data.progress.split("% complete")
-        res.json ({
-          status: data.status,
-          progress: data.progress,
-          urn: data.urn,
-          name: name
-        }).end () ;
-        console.log ('Request: ' + data.status + ' (' + data.progress + ')') ;
-    }).catch (function (error) {
-        console.log("error ",error)
-        res.status (404).end () ;
-      }) ;
-  })
+
+  //ForgeOSS.ApiClient.instance.authentications ['oauth2_application'].accessToken =accessToken ;
+  ForgeModelDerivative.ApiClient.instance.authentications ['oauth2_application'].accessToken =accessToken ;
+  md.getManifest (urn, {})
+    .then (function (data) {
+      var name =path.basename (Buffer.from (data.urn, 'base64').toString ()) ;
+      if ( data.derivatives !== undefined && data.derivatives.length > 0 && data.derivatives [0].hasOwnProperty ('name') )
+        name =data.derivatives [0].name ;
+      res.json ({
+        status: data.status,
+        progress: data.progress,
+        urn: data.urn,
+        name: name
+      }).end () ;
+      console.log ('Request: ' + data.status + ' (' + data.progress + ')') ;
+    })
+    .catch (function (error) {
+      res.status (404).end () ;
+    }) ;
 }) ;
 
 function makeKey (file) {
@@ -104,9 +102,16 @@ function ExistOrCreate (bucketKey,oAuth2TwoLegged,credentials) {
 }
 
 router.post ('/translate', function (req, res) {
-  var credentials = req.session.credentials
+  var accessToken =req.body.accessToken ;
   var autoRefresh = true;
-  var oAuth2TwoLegged = new ForgeSDK.AuthClientTwoLegged(credentials.client_id, credentials.client_secret, credentials.scope, autoRefresh);
+  var oAuth2TwoLegged = new ForgeSDK.AuthClientTwoLegged(CLIENT_ID, CLIENT_SECRET, [
+    'bucket:read',
+    'bucket:create',
+    'data:create',
+    'data:read',
+    'data:write',
+    'viewables:read'
+  ], autoRefresh);
   oAuth2TwoLegged.authenticate().then(function(credentials) {
     console.log(" oAuth2TwoLegged credentials ", credentials)
     var filename =path.normalize (__dirname + '/../' + req.body.file) ;
@@ -156,7 +161,7 @@ router.post ('/translate', function (req, res) {
       })
       .then (function (results) {
         console.log("results ",results)
-        res.json (results.body) ;
+        res.json (results) ;
       })
       .catch (function (error) {
         console.log ("error ",JSON.stringify (error)) ;

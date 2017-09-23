@@ -19,16 +19,16 @@
 // UNINTERRUPTED OR ERROR FREE.
 //
 var express =require ('express') ;
-var ForgeOauth2 =require ('forge-oauth2') ;
+var ForgeSDK =require ('forge-apis') ;
 var config =require ('./credentials') ;
-
+var session = require('express-session');
 var router =express.Router () ;
 
 // This is the downgraded access_token for the viewer (should be read-only)
 router.get ('/token', function (req, res) {
     var credentials =config.clone ('data:read') ;
-    // credentials.client_id =req.query.key ;
-    // credentials.client_secret =req.query.secret ;
+    credentials.client_id =req.query.key ;
+    credentials.client_secret =req.query.secret ;
     console.log("credentials ",credentials)
     refreshToken (credentials, res) ;
 }) ;
@@ -36,21 +36,21 @@ router.get ('/token', function (req, res) {
 // This is the full access access_token for the application to process/translate files
 router.post ('/token', function (req, res) {
 	var credentials =config.clone () ;
-	// credentials.client_id =req.body.key ;
-	// credentials.client_secret =req.body.secret ;
+	credentials.client_id =req.body.key ;
+	credentials.client_secret =req.body.secret ;
+  req.session.credentials = credentials
 	refreshToken (credentials, res) ;
 }) ;
 
 var refreshToken =function (credentials, res) {
-	var apiInstance =new ForgeOauth2.TwoLeggedApi () ;
-	apiInstance.authenticate (credentials.client_id, credentials.client_secret, credentials.grant_type, credentials)
-		.then (function (response) {
-			res.json (response) ;
-		})
-		.catch (function (error) {
+  var autoRefresh = true;
+  var oAuth2TwoLegged = new ForgeSDK.AuthClientTwoLegged(credentials.client_id, credentials.client_secret, credentials.scope, autoRefresh);
+  oAuth2TwoLegged.authenticate().then(function(credentials) {
+    res.json (credentials) ;
+  }).catch (function (error) {
 			if ( error.statusCode )
 				return (res.status (error.statusCode).end (error.statusMessage)) ;
-			res.status (500).end () ;
+			res.status (500).end ("Enter valid credentials") ;
 		})
 	;
 } ;
